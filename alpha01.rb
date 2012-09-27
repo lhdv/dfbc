@@ -3,11 +3,13 @@
 # TODO
 #
 # (09/26) Inform the user which parameter got error and why(?)
-# (09/26) Decide if the @row_number will be 0 or nil when it wasn't informed
 # (09/26) A new parameter the begin the changes based on a row number
 # (09/26) Maybe a changelog might be a good idea. 
 #         Like: Line01:Column05 OldValue = "abc" NewValue = "123"
 #
+# (09/26-09/26) Decide if the @row_number will be 0 or nil when it wasn't 
+#               informed
+# (09/27-09/27) Bug when the input file has blank lines
 ###############################################################################
 
 require 'csv'
@@ -225,9 +227,47 @@ class Alpha01
   def process_file
   
     file = CSV.read(@input_file,{:col_sep => @column_separator})
+        
+    puts "# PROCESS FILE #"
+    puts " "
+    puts "Input File: #{@input_file}"
+    puts "Ouput File: #{@output_file}"
     
-    puts file[0][1]
-  
+    ###########################################################################
+    # Check if the changes will be made on all lines or only one
+    ###########################################################################
+    if( @row_number == nil )
+
+      for i in (0..file.length-1)
+
+        #puts "-- #{file.at(i).at(@column_number-1)}"
+        if( file.at(i)[@column_number-1] != nil )
+          file.at(i)[@column_number-1] = @column_value          
+        end
+        
+      end
+
+    else
+        
+      #puts "-- #{file.at(@row_number-1).at(@column_number-1)}"  
+      if( file.at(@row_number-1)[@column_number-1] != nil )
+
+        file.at(@row_number-1)[@column_number-1] = @column_value  
+      end
+            
+    end    
+
+    #puts ("-- #{file}\n")
+
+    CSV.open(@output_file, "wb", {:col_sep => @column_separator}) do |f|  
+
+      file.each do |line|
+        f << line
+        #puts ("-- #{line}")
+      end
+      
+    end
+      
   end
 
 end
