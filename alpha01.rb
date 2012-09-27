@@ -2,14 +2,18 @@
 #
 # TODO
 #
-# (09/26) Inform the user which parameter got error and why(?)
-# (09/26) A new parameter the begin the changes based on a row number
 # (09/26) Maybe a changelog might be a good idea. 
 #         Like: Line01:Column05 OldValue = "abc" NewValue = "123"
+# (09/27) Do a new function to validate_input_parameter_values, to check if the
+#         -cn exists in the file and other stuff
+#
+# DONE
 #
 # (09/26-09/26) Decide if the @row_number will be 0 or nil when it wasn't 
 #               informed
 # (09/27-09/27) Bug when the input file has blank lines
+# (09/26-09/27) Inform the user which parameter got error and why(?)
+# (09/26-09/27) A new parameter the begin the changes based on a row number
 ###############################################################################
 
 require 'csv'
@@ -18,10 +22,19 @@ class Alpha01
 
   attr_accessor :valid_input_parameters, :req_input_parameters
   attr_accessor :input_file, :output_file, :column_separator, :column_number, 
-                :row_number, :column_value
+                :row_number, :bypass_header, :column_value
   
+  #############################################################################
+  #
+  # initialize      
+  #
+  # desc   : Init all the damn things
+  # input  : None
+  # output : None
+  #
+  #############################################################################
   def initialize
-    @valid_input_parameters = ["-if","-of","-cs","-cn","-rn","-cv"]
+    @valid_input_parameters = ["-if","-of","-cs","-cn","-rn","-bh","-cv"]
     @req_input_parameters = ["-if","-cn","-cv"]
   end
 
@@ -48,6 +61,7 @@ class Alpha01
      is 0 (*REQUIRED*)"
     puts "-rn: number of the row to change the value, the first column value
      is 0. To update all rows, just don't pass this parameter"
+    puts "-bh: by pass the header row(the first) Y or N"
     puts "-cv: value that will be changed in the referred column (*REQUIRED*)"
 
   end
@@ -111,7 +125,7 @@ class Alpha01
     	  valid_params = File.exists?(p["-if"])
     	  if( valid_params )
 	    
-	    @input_file = p["-if"]
+	        @input_file = p["-if"]
 	    
     	    #
     	    # -cn validation: must be a unsigned number
@@ -165,7 +179,7 @@ class Alpha01
     	  
     	    valid_params = ( p["-cs"] =~ /[,;\@#]/ ) != nil    	    
     	    if( valid_params )
-    	      @column_separator = p["-cv"]    	    
+    	      @column_separator = p["-cs"]    	    
     	    else
     	      @column_separator = ";"
     	    end
@@ -174,9 +188,9 @@ class Alpha01
     	    @column_separator = ";"
     	  end    	  
     	  
-  	  #
+  	    #
     	  # -rn validation: must be a unsigned number. If it's not passed in 
-    	  #                 the default will be ????
+    	  #                 the default will be nil
     	  #
     	  if (p.has_key?("-rn") )
 
@@ -185,11 +199,30 @@ class Alpha01
     	      @row_number = p["-rn"].to_i
     	    else
     	      @row_number = nil
+          end
    	    end
-   	  
-   	  else
-            @row_number = nil
-    	  end
+
+        #
+        # -bh validation: must be 0 or 1 oy Y oy N or y oy n
+        #
+        if (p.has_key?("-bh") )
+
+          valid_params = ( p["-bh"] =~ /[01YNyn]/ ) != nil
+          if( valid_params )          
+
+            if( ( p["-bh"] =~ /[1Yy]/ ) != nil )
+              @bypass_header = true
+            else
+              @bypass_header = false
+            end            
+
+          else
+            @bypass_header = false
+          end
+
+        else
+          @bypass_header = false
+        end   	  
     	
     	end # end required parameters
     	
@@ -201,6 +234,7 @@ class Alpha01
     puts("-cs value : #{@column_separator} (#{@column_separator.class})")
     puts("-cn value*: #{@column_number} (#{@column_number.class})")
     puts("-rn value*: #{@row_number} (#{@row_number.class})")    
+    puts("-bh value*: #{@bypass_header} (#{@bypass_header.class})")    
     puts("-cv value*: #{@column_value} (#{@column_value.class})")
     puts("\nIs the params okay? #{valid_params}")
     
@@ -232,24 +266,28 @@ class Alpha01
     puts " "
     puts "Input File: #{@input_file}"
     puts "Ouput File: #{@output_file}"
-    
+
     ###########################################################################
     # Check if the changes will be made on all lines or only one
     ###########################################################################
-    if( @row_number == nil )
+    if( @row_number == nil )      
 
       for i in (0..file.length-1)
 
-        #puts "-- #{file.at(i).at(@column_number-1)}"
-        if( file.at(i)[@column_number-1] != nil )
-          file.at(i)[@column_number-1] = @column_value          
+        if( (@bypass_header == true && i>0) || @bypass_header == false )
+
+          puts "-- #{file.at(i).at(@column_number-1)} <= #{@column_value}"
+          if( file.at(i)[@column_number-1] != nil )
+            file.at(i)[@column_number-1] = @column_value          
+          end
+
         end
         
       end
 
     else
         
-      #puts "-- #{file.at(@row_number-1).at(@column_number-1)}"  
+      puts "-- #{file.at(@row_number-1).at(@column_number-1)} <= #{@column_value}"  
       if( file.at(@row_number-1)[@column_number-1] != nil )
 
         file.at(@row_number-1)[@column_number-1] = @column_value  
