@@ -4,8 +4,6 @@
 #
 # (09/26) Maybe a changelog might be a good idea. 
 #         Like: Line01:Column05 OldValue = "abc" NewValue = "123"
-# (09/27) Do a new function to validate_input_parameter_values, to check if the
-#         -cn exists in the file and other stuff
 #
 # DONE
 #
@@ -14,6 +12,8 @@
 # (09/27-09/27) Bug when the input file has blank lines
 # (09/26-09/27) Inform the user which parameter got error and why(?)
 # (09/26-09/27) A new parameter the begin the changes based on a row number
+# (09/27-10/01) Do a new function to validate_input_parameter_values, to check 
+#               if the -cn exists in the file and other stuff
 ###############################################################################
 
 require 'csv'
@@ -64,7 +64,7 @@ class Alpha01
     puts "-bh: by pass the header row(the first) Y or N"
     puts "-cv: value that will be changed in the referred column (*REQUIRED*)"
 
-  end
+  end # end exit_no_parameters
 
   #############################################################################
   #
@@ -113,16 +113,16 @@ class Alpha01
     valid_params = p.keys.all? { |pk| valid_input_parameters.include? pk }    
     if( valid_params )    
     
-        #######################################################################
-        # Check if all the required parameters were passed in and are valid
-        #######################################################################
+      #######################################################################
+      # Check if all the required parameters were passed in and are valid
+      #######################################################################
     	valid_params = req_input_parameters.all? { |rp| p.keys.include? rp }    	
     	if( valid_params )
     	
     	  #
     	  # -if validation: check if the file exists
     	  #
-    	  valid_params = File.exists?(p["-if"])
+    	  valid_params = File.exist?(p["-if"])
     	  if( valid_params )
 	    
 	        @input_file = p["-if"]
@@ -140,12 +140,33 @@ class Alpha01
     	      #
     	      valid_params = p["-cv"] != nil
     	      if( valid_params )
-    	      
+
     	        @column_value = p["-cv"]
-    	      
+
+    	      else
+              
+              puts "\n--------------------------------------------------"
+              puts "# ERROR: Invalid Column Value: #{p["-cv"]}"
+              puts "--------------------------------------------------\n"
+              return valid_params
+
     	      end    	      
-    	      
+
+    	    else
+            
+            puts "\n--------------------------------------------------"
+            puts "# ERROR: Invalid Column Number: #{p["-cn"]}"
+            puts "--------------------------------------------------\n"
+            return valid_params
+
     	    end
+
+        else
+          
+          puts "\n--------------------------------------------------"
+          puts "# ERROR: Input File not found: #{p["-if"]}"
+          puts "--------------------------------------------------\n"
+          return valid_params
 
     	  end    	  
     
@@ -164,8 +185,15 @@ class Alpha01
     	    valid_params = !File.extname(p["-of"]).empty?
     	    if( valid_params )
     	      @output_file = p["-of"]
+          else
+
+            puts "\n--------------------------------------------------"
+            puts "# ERROR: Invalid Output File: #{p["-of"]}"
+            puts "--------------------------------------------------\n"
+            return valid_params            
+
     	    end
-    	  
+
     	  else
     	    @output_file = "NEW_" + @input_file
     	  end
@@ -194,12 +222,13 @@ class Alpha01
     	  #
     	  if (p.has_key?("-rn") )
 
-    	    valid_params = ( p["-rn"] =~ /[0-9]/ ) != nil
+    	    valid_params = ( p["-rn"] =~ /[1-9]/ ) != nil
     	    if( valid_params )    	    
     	      @row_number = p["-rn"].to_i
     	    else
     	      @row_number = nil
           end
+
    	    end
 
         #
@@ -209,7 +238,7 @@ class Alpha01
 
           valid_params = ( p["-bh"] =~ /[01YNyn]/ ) != nil
           if( valid_params )          
-
+            
             if( ( p["-bh"] =~ /[1Yy]/ ) != nil )
               @bypass_header = true
             else
@@ -223,9 +252,23 @@ class Alpha01
         else
           @bypass_header = false
         end   	  
-    	
+
+    	else
+
+          puts "\n--------------------------------------------------"
+          puts "# ERROR: Missing required parameters: #{req_input_parameters}"
+          puts "--------------------------------------------------\n"        
+          return valid_params
+
     	end # end required parameters
-    	
+
+    else
+
+      puts "\n--------------------------------------------------"
+      puts "# ERROR: Wrong number of parameters: #{p.keys}"
+      puts "--------------------------------------------------\n"
+      return valid_params
+    
     end # end valid parameters
     
     puts("\n#####\@ PARAMS \@#####\n")
@@ -240,13 +283,50 @@ class Alpha01
     
     return valid_params
 
-  end
+  end # end def validate_input_parameters
   
-#  - open the input_file
-#  - check if there is a valid -cn(column number) to change the values,
-#    based on the -cs(column separator)
-#  - if a -rn(row number) was passed in update just this row, else update
-#    all rows
+  #############################################################################
+  #
+  # validate_input_parameter_values
+  #
+  # desc   : validate if all the parameters have valid valeus
+  #
+  # input  : file(File) -> input_file openned
+  # output : None
+  #
+  #############################################################################
+  def validate_input_parameter_values(file)
+    
+    valid_param_value = false
+
+    #
+    # -cn validation
+    #
+    line_value = file.sample
+    if ( file.at(@column_number-1) != nil )
+      valid_param_value = true
+    else
+      puts "\n--------------------------------------------------"
+      puts "# ERROR: Column Number not found:  #{@column_number}"
+      puts "--------------------------------------------------\n"
+    end
+
+    #
+    # -rn validation
+    #    
+    if( @row_number != nil )
+      if ( file.at(@row_number-1) != nil )
+        valid_param_value = true
+      else
+        puts "\n--------------------------------------------------"
+        puts "# ERROR: Row Number not found : #{@row_number}"
+        puts "--------------------------------------------------\n"
+      end    
+    end
+
+    return valid_param_value
+
+  end # end def validate_input_parameter_values
 
   #############################################################################
   #
@@ -254,8 +334,8 @@ class Alpha01
   #
   # desc   : Open the @input_file read it, change it and finish it
   #
-  # input  : 
-  # output : 
+  # input  : None
+  # output : None
   #
   #############################################################################
   def process_file
@@ -268,47 +348,54 @@ class Alpha01
     puts "Ouput File: #{@output_file}"
 
     ###########################################################################
-    # Check if the changes will be made on all lines or only one
+    # Call a function to validate the parameter's value
     ###########################################################################
-    if( @row_number == nil )      
+    if( validate_input_parameter_values(file) )
 
-      for i in (0..file.length-1)
+      #########################################################################
+      # Check if the changes will be made on all lines or only one
+      #########################################################################
+      if( @row_number == nil )      
 
-        if( (@bypass_header == true && i>0) || @bypass_header == false )
+        for i in (0..file.length-1)
 
-          puts "-- #{file.at(i).at(@column_number-1)} <= #{@column_value}"
-          if( file.at(i)[@column_number-1] != nil )
-            file.at(i)[@column_number-1] = @column_value          
+          #puts "-- #{file.at(i).at(@column_number-1)} <= #{@column_value}"
+          if( (@bypass_header == true && i>0) || @bypass_header == false )          
+            
+            if( file.at(i)[@column_number-1] != nil )
+              file.at(i)[@column_number-1] = @column_value          
+            end
+
           end
+          
+        end
 
+      else
+          
+        #puts "-- #{file.at(@row_number-1).at(@column_number-1)} <= #{@column_value}"  
+        if( file.at(@row_number-1)[@column_number-1] != nil )
+          file.at(@row_number-1)[@column_number-1] = @column_value  
+        end
+              
+      end    
+
+      #
+      # Write the output file
+      #
+      CSV.open(@output_file, "wb", {:col_sep => @column_separator}) do |f|  
+
+        file.each do |line|
+          f << line
+          #puts ("-- #{line}")
         end
         
-      end
+      end # end block write output file      
 
-    else
-        
-      puts "-- #{file.at(@row_number-1).at(@column_number-1)} <= #{@column_value}"  
-      if( file.at(@row_number-1)[@column_number-1] != nil )
-
-        file.at(@row_number-1)[@column_number-1] = @column_value  
-      end
-            
-    end    
-
-    #puts ("-- #{file}\n")
-
-    CSV.open(@output_file, "wb", {:col_sep => @column_separator}) do |f|  
-
-      file.each do |line|
-        f << line
-        #puts ("-- #{line}")
-      end
+    end # end if( validate_input_parameter_values(file) )
       
-    end
-      
-  end
+  end # end def process_file
 
-end
+end # end of class
 
 ###############################################################################
 # MAIN
@@ -327,9 +414,3 @@ params = alpha.validate_input_parameters(input_params)
 if ( params )
   alpha.process_file
 end
-
-#puts params.class
-
-#s = Array.new
-#",123,123,456,456,777,111".lines(",") {|x| s << x.chomp(",")}
-#p s
