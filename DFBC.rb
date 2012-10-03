@@ -1,25 +1,4 @@
-###############################################################################
-#
-# TODO
-#
-# (09/26) Maybe a changelog might be a good idea. 
-#         Like: Line01:Column05 OldValue = "abc" NewValue = "123"
-#
-# DONE
-#
-# (09/26-09/26) Decide if the @row_number will be 0 or nil when it wasn't 
-#               informed
-# (09/27-09/27) Bug when the input file has blank lines
-# (09/26-09/27) Inform the user which parameter got error and why(?)
-# (09/26-09/27) A new parameter the begin the changes based on a row number
-# (09/27-10/01) Do a new function to validate_input_parameter_values, to check 
-#               if the -cn exists in the file and other stuff
-# (10/01-10/02) Handle directories in Input and Output Files
-# (10/02-10/02) Directive to output debug and log info
-#
-###############################################################################
 require 'csv'
-
 load ("DisplayOutput.rb")
 
 class DFBC  
