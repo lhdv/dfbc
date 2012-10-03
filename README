@@ -1,0 +1,14 @@
+===============================================================================
+                    DFBC - Delimited-File Bulk Changer
+===============================================================================
+                                README
+===============================================================================
+
+  This is a simple app developed in Ruby to make bulk changes in a 
+delimited-file, like CSV.
+  Basically you can make changes in a column for only one row or for entire 
+file.
+
+  It was done on my spare time, just to beginning to learn Ruby.
+  (I know, there are a lot of mistakes!)
+

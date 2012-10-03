@@ -1,0 +1,21 @@
+UNIT TESTS
+
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -cn 3 -cv "++++"
+ruby dfbc.rb -if UNIT_TEST/T02.TXT -cn 3 -cv "===="
+
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ; -cn 3 -cv "===="
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv "++++"
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 30 -cv "++++"
+
+- Blank column value
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv " "
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv ""
+
+- Check bypass header line
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH01" -bh 1
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH02" -bh n
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH03" -bh y
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH04" -bh Y
+
+- Change a row that doesn't exist
+ruby dfbc.rb -if UNIT_TEST/T01.TXT -of X.TXT -cs ; -cn 3 -rn 15 -cv "===="

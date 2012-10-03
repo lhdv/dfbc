@@ -4,6 +4,7 @@
 #
 # (09/26) Maybe a changelog might be a good idea. 
 #         Like: Line01:Column05 OldValue = "abc" NewValue = "123"
+# (10/02) Directive to output debug and log info
 #
 # DONE
 #
@@ -14,15 +15,17 @@
 # (09/26-09/27) A new parameter the begin the changes based on a row number
 # (09/27-10/01) Do a new function to validate_input_parameter_values, to check 
 #               if the -cn exists in the file and other stuff
+# (10/01-10/02) Handle directories in Input and Output Files
+#
 ###############################################################################
-
 require 'csv'
 
 class Alpha01
 
-  attr_accessor :valid_input_parameters, :req_input_parameters
-  attr_accessor :input_file, :output_file, :column_separator, :column_number, 
-                :row_number, :bypass_header, :column_value
+  attr_accessor :valid_input_parameters, :req_input_parameters,
+                :input_file, :output_file, :base_directory,
+                :column_separator, :column_number, :row_number, :column_value,
+                :bypass_header
   
   #############################################################################
   #
@@ -36,7 +39,7 @@ class Alpha01
   def initialize
     @valid_input_parameters = ["-if","-of","-cs","-cn","-rn","-bh","-cv"]
     @req_input_parameters = ["-if","-cn","-cv"]
-  end
+  end # end initialize
 
   #############################################################################
   #
@@ -48,7 +51,6 @@ class Alpha01
   #
   #############################################################################
   def exit_no_parameters      
-
     puts "\n=================="
     puts " Input Parameters"
     puts "==================\n\n"
@@ -58,12 +60,11 @@ class Alpha01
      NEW_<input file>"
     puts "-cs: character for column separator"
     puts "-cn: number of the column to change the value, the first column value
-     is 0 (*REQUIRED*)"
+     is 1 (*REQUIRED*)"
     puts "-rn: number of the row to change the value, the first column value
-     is 0. To update all rows, just don't pass this parameter"
+     is 1. To update all rows, just don't pass this parameter"
     puts "-bh: by pass the header row(the first) Y or N"
     puts "-cv: value that will be changed in the referred column (*REQUIRED*)"
-
   end # end exit_no_parameters
 
   #############################################################################
@@ -81,8 +82,7 @@ class Alpha01
   # output : valid_params(Boolean) -> if the parameters are okay or not
   #
   #############################################################################
-  def validate_input_parameters(in_params)
-  
+  def validate_input_parameters(in_params)  
     valid_params = false
     
     ###########################################################################
@@ -125,7 +125,8 @@ class Alpha01
     	  valid_params = File.exist?(p["-if"])
     	  if( valid_params )
 	    
-	        @input_file = p["-if"]
+	        @input_file = File.basename(p["-if"])
+          @base_directory = File.dirname(p["-if"])
 	    
     	    #
     	    # -cn validation: must be a unsigned number
@@ -272,8 +273,8 @@ class Alpha01
     end # end valid parameters
     
     puts("\n#####\@ PARAMS \@#####\n")
-    puts("-if value*: #{@input_file} (#{@input_file.class})")
-    puts("-of value : #{@output_file} (#{@output_file.class})")
+    puts("-if value*: #{@base_directory}/#{@input_file}(#{@input_file.class})")
+    puts("-of value : #{@base_directory}/#{@output_file}(#{@output_file.class})")
     puts("-cs value : #{@column_separator} (#{@column_separator.class})")
     puts("-cn value*: #{@column_number} (#{@column_number.class})")
     puts("-rn value*: #{@row_number} (#{@row_number.class})")    
@@ -281,8 +282,7 @@ class Alpha01
     puts("-cv value*: #{@column_value} (#{@column_value.class})")
     puts("\nIs the params okay? #{valid_params}")
     
-    return valid_params
-
+    valid_params
   end # end def validate_input_parameters
   
   #############################################################################
@@ -324,8 +324,7 @@ class Alpha01
       end    
     end
 
-    return valid_param_value
-
+    valid_param_value
   end # end def validate_input_parameter_values
 
   #############################################################################
@@ -339,13 +338,14 @@ class Alpha01
   #
   #############################################################################
   def process_file
-  
-    file = CSV.read(@input_file,{:col_sep => @column_separator})
+    init_file_path = "#{@base_directory}/#{@input_file}"
+    file = CSV.read(init_file_path,
+                    {:col_sep => @column_separator})
         
     puts "# PROCESS FILE #"
     puts " "
-    puts "Input File: #{@input_file}"
-    puts "Ouput File: #{@output_file}"
+    puts "Input File: #{@base_directory}/#{@input_file}"
+    puts "Ouput File: #{@base_directory}/#{@output_file}"
 
     ###########################################################################
     # Call a function to validate the parameter's value
@@ -360,7 +360,7 @@ class Alpha01
         for i in (0..file.length-1)
 
           #puts "-- #{file.at(i).at(@column_number-1)} <= #{@column_value}"
-          if( (@bypass_header == true && i>0) || @bypass_header == false )          
+          if( (@bypass_header == true && i>0) || @bypass_header == false )
             
             if( file.at(i)[@column_number-1] != nil )
               file.at(i)[@column_number-1] = @column_value          
@@ -381,8 +381,9 @@ class Alpha01
 
       #
       # Write the output file
-      #
-      CSV.open(@output_file, "wb", {:col_sep => @column_separator}) do |f|  
+      #      
+      result_file_path = "#{@base_directory}/#{@output_file}"
+      CSV.open(result_file_path, "wb", {:col_sep => @column_separator}) do |f|  
 
         file.each do |line|
           f << line
@@ -392,7 +393,6 @@ class Alpha01
       end # end block write output file      
 
     end # end if( validate_input_parameter_values(file) )
-      
   end # end def process_file
 
 end # end of class
@@ -400,17 +400,16 @@ end # end of class
 ###############################################################################
 # MAIN
 ###############################################################################
-
 alpha = Alpha01.new
 input_params = ARGV
 
-if(input_params.empty?)
+if (input_params.empty?)
   alpha.exit_no_parameters
   exit
 end
 
-params = alpha.validate_input_parameters(input_params)
+valid_params = alpha.validate_input_parameters(input_params)
 
-if ( params )
+if (valid_params)
   alpha.process_file
 end

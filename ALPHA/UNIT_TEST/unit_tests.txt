@@ -1,0 +1,21 @@
+UNIT TESTS
+
+ruby alpha01.rb -if T01.TXT -cn 3 -cv "++++"
+ruby alpha01.rb -if T02.TXT -cn 3 -cv "===="
+
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ; -cn 3 -cv "===="
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv "++++"
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 30 -cv "++++"
+
+- Blank column value
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv " "
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv ""
+
+- Check bypass header line
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH01" -bh 1
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH02" -bh n
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH03" -bh y
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ";" -cn 3 -cv "BH04" -bh Y
+
+- Change a row that doesn't exist
+ruby alpha01.rb -if T01.TXT -of X.TXT -cs ; -cn 3 -rn 15 -cv "===="
